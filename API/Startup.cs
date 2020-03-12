@@ -26,24 +26,31 @@ namespace API
 
         public IConfiguration Configuration { get; }
 
-        readonly string MyAllowSpecificOrigins = "_myAllowSpecificOrigins";
+        //readonly string MyAllowSpecificOrigins = "_myAllowSpecificOrigins";
 
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
-            services.AddDbContext<DataContext>(opt => {
+            services.AddDbContext<DataContext>(opt =>
+            {
                 opt.UseSqlite(Configuration.GetConnectionString("DefaultConnection"));
             });
-        services.AddCors(options =>
-        {
-            options.AddPolicy(MyAllowSpecificOrigins,
-            builder =>
-            {
-                builder.WithOrigins("http://localhost:3000");
-            });
-        }); 
-        
 
+            /*             services.AddCors(opt =>
+                                    {
+                                        opt.AddPolicy("CorsPolicy", policy =>
+                                        {
+                                            policy.AllowAnyHeader().AllowAnyMethod().WithOrigins("http://localhost:3000");
+                                        });
+                                    });
+             */
+
+            services.AddCors(o => o.AddPolicy("MyPolicy", builder =>
+            {
+                builder.AllowAnyOrigin()
+                       .AllowAnyMethod()
+                       .AllowAnyHeader();
+            }));
             services.AddMediatR(typeof(List.Handler).Assembly);
             services.AddControllers();
 
@@ -52,21 +59,23 @@ namespace API
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
         {
+            app.UseCors("MyPolicy");
             if (env.IsDevelopment())
             {
                 app.UseDeveloperExceptionPage();
             }
 
             //app.UseHttpsRedirection();
-            app.UseCors(MyAllowSpecificOrigins); 
+            //app.UseCors(MyAllowSpecificOrigins);
             
+
 
             app.UseRouting();
 
             app.UseAuthorization();
 
 
-            
+
 
             app.UseEndpoints(endpoints =>
             {
